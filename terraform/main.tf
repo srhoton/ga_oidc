@@ -56,6 +56,26 @@ resource "aws_iam_policy" "s3_bucket_access" {
   })
 }
 
+# Create policy for full S3 bucket access to srhoton-tfstate
+resource "aws_iam_policy" "s3_tfstate_full_access" {
+  name        = "github-actions-s3-tfstate-full-access"
+  description = "Policy allowing GitHub Actions full access to the srhoton-tfstate S3 bucket"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = "s3:*"
+        Resource = [
+          "arn:aws:s3:::srhoton-tfstate",
+          "arn:aws:s3:::srhoton-tfstate/*"
+        ]
+      }
+    ]
+  })
+}
+
 # Create custom policy for CloudFront cache invalidation
 resource "aws_iam_policy" "cloudfront_invalidation" {
   name        = "github-actions-cloudfront-invalidation"
@@ -176,6 +196,12 @@ resource "aws_iam_role_policy_attachment" "github_actions_policy" {
 resource "aws_iam_role_policy_attachment" "github_actions_s3_policy" {
   role       = aws_iam_role.github_actions.name
   policy_arn = aws_iam_policy.s3_bucket_access.arn
+}
+
+# Attach S3 tfstate full access policy to the role
+resource "aws_iam_role_policy_attachment" "github_actions_s3_tfstate_policy" {
+  role       = aws_iam_role.github_actions.name
+  policy_arn = aws_iam_policy.s3_tfstate_full_access.arn
 }
 
 # Attach CloudFront invalidation policy to the role
