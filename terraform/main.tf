@@ -79,6 +79,93 @@ resource "aws_iam_policy" "cloudfront_invalidation" {
   })
 }
 
+# Create custom policy for Lambda function deployment
+resource "aws_iam_policy" "lambda_deployment" {
+  name        = "github-actions-lambda-deployment"
+  description = "Policy allowing GitHub Actions to deploy and manage Lambda functions"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "lambda:GetFunction",
+          "lambda:CreateFunction",
+          "lambda:DeleteFunction",
+          "lambda:UpdateFunctionCode",
+          "lambda:UpdateFunctionConfiguration",
+          "lambda:ListVersionsByFunction",
+          "lambda:PublishVersion",
+          "lambda:CreateAlias",
+          "lambda:UpdateAlias",
+          "lambda:DeleteAlias",
+          "lambda:GetAlias",
+          "lambda:ListAliases",
+          "lambda:AddPermission",
+          "lambda:RemovePermission",
+          "lambda:InvokeFunction",
+          "lambda:GetPolicy"
+        ]
+        Resource = ["arn:aws:lambda:us-east-1:*:function:*"]
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "lambda:ListFunctions",
+          "lambda:ListTags",
+          "lambda:TagResource",
+          "lambda:UntagResource"
+        ]
+        Resource = ["*"]
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "iam:PassRole"
+        ]
+        Resource = ["*"]
+        Condition = {
+          StringEquals = {
+            "iam:PassedToService" = "lambda.amazonaws.com"
+          }
+        }
+      }
+    ]
+  })
+}
+
+# Create custom policy for SQS queue management
+resource "aws_iam_policy" "sqs_management" {
+  name        = "github-actions-sqs-management"
+  description = "Policy allowing GitHub Actions to create and manage SQS queues"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "sqs:CreateQueue",
+          "sqs:DeleteQueue",
+          "sqs:GetQueueAttributes",
+          "sqs:GetQueueUrl",
+          "sqs:ListQueues",
+          "sqs:ListQueueTags",
+          "sqs:SetQueueAttributes",
+          "sqs:TagQueue",
+          "sqs:UntagQueue",
+          "sqs:SendMessage",
+          "sqs:ReceiveMessage",
+          "sqs:DeleteMessage",
+          "sqs:PurgeQueue"
+        ]
+        Resource = ["arn:aws:sqs:us-east-1:*:*"]
+      }
+    ]
+  })
+}
+
 # Attach policies to the role as needed
 resource "aws_iam_role_policy_attachment" "github_actions_policy" {
   role       = aws_iam_role.github_actions.name
@@ -95,6 +182,18 @@ resource "aws_iam_role_policy_attachment" "github_actions_s3_policy" {
 resource "aws_iam_role_policy_attachment" "github_actions_cloudfront_policy" {
   role       = aws_iam_role.github_actions.name
   policy_arn = aws_iam_policy.cloudfront_invalidation.arn
+}
+
+# Attach Lambda deployment policy to the role
+resource "aws_iam_role_policy_attachment" "github_actions_lambda_policy" {
+  role       = aws_iam_role.github_actions.name
+  policy_arn = aws_iam_policy.lambda_deployment.arn
+}
+
+# Attach SQS management policy to the role
+resource "aws_iam_role_policy_attachment" "github_actions_sqs_policy" {
+  role       = aws_iam_role.github_actions.name
+  policy_arn = aws_iam_policy.sqs_management.arn
 }
 
 # Output the role ARN for use in GitHub Actions workflows
