@@ -186,6 +186,55 @@ resource "aws_iam_policy" "sqs_management" {
   })
 }
 
+# Create custom policy for IAM management
+resource "aws_iam_policy" "iam_management" {
+  name        = "github-actions-iam-management"
+  description = "Policy allowing GitHub Actions to create, modify, and delete IAM policies and roles"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "iam:CreatePolicy",
+          "iam:DeletePolicy",
+          "iam:CreatePolicyVersion",
+          "iam:DeletePolicyVersion",
+          "iam:GetPolicy",
+          "iam:GetPolicyVersion",
+          "iam:ListPolicyVersions",
+          "iam:ListPolicies",
+          "iam:TagPolicy",
+          "iam:UntagPolicy"
+        ]
+        Resource = "arn:aws:iam::*:policy/*"
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "iam:CreateRole",
+          "iam:DeleteRole",
+          "iam:GetRole",
+          "iam:ListRoles",
+          "iam:UpdateRole",
+          "iam:UpdateRoleDescription",
+          "iam:TagRole",
+          "iam:UntagRole",
+          "iam:AttachRolePolicy",
+          "iam:DetachRolePolicy",
+          "iam:ListAttachedRolePolicies",
+          "iam:ListRolePolicies",
+          "iam:PutRolePolicy",
+          "iam:DeleteRolePolicy",
+          "iam:GetRolePolicy"
+        ]
+        Resource = "arn:aws:iam::*:role/*"
+      }
+    ]
+  })
+}
+
 # Attach policies to the role as needed
 resource "aws_iam_role_policy_attachment" "github_actions_policy" {
   role       = aws_iam_role.github_actions.name
@@ -220,6 +269,12 @@ resource "aws_iam_role_policy_attachment" "github_actions_lambda_policy" {
 resource "aws_iam_role_policy_attachment" "github_actions_sqs_policy" {
   role       = aws_iam_role.github_actions.name
   policy_arn = aws_iam_policy.sqs_management.arn
+}
+
+# Attach IAM management policy to the role
+resource "aws_iam_role_policy_attachment" "github_actions_iam_policy" {
+  role       = aws_iam_role.github_actions.name
+  policy_arn = aws_iam_policy.iam_management.arn
 }
 
 # Output the role ARN for use in GitHub Actions workflows
