@@ -56,6 +56,29 @@ resource "aws_iam_policy" "s3_bucket_access" {
   })
 }
 
+# Create custom policy for CloudFront cache invalidation
+resource "aws_iam_policy" "cloudfront_invalidation" {
+  name        = "github-actions-cloudfront-invalidation"
+  description = "Policy allowing GitHub Actions to create CloudFront cache invalidations"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "cloudfront:CreateInvalidation",
+          "cloudfront:GetInvalidation",
+          "cloudfront:ListInvalidations"
+        ]
+        Resource = [
+          "arn:aws:cloudfront::*:distribution/E121HAZWT3OMVA"
+        ]
+      }
+    ]
+  })
+}
+
 # Attach policies to the role as needed
 resource "aws_iam_role_policy_attachment" "github_actions_policy" {
   role       = aws_iam_role.github_actions.name
@@ -66,6 +89,12 @@ resource "aws_iam_role_policy_attachment" "github_actions_policy" {
 resource "aws_iam_role_policy_attachment" "github_actions_s3_policy" {
   role       = aws_iam_role.github_actions.name
   policy_arn = aws_iam_policy.s3_bucket_access.arn
+}
+
+# Attach CloudFront invalidation policy to the role
+resource "aws_iam_role_policy_attachment" "github_actions_cloudfront_policy" {
+  role       = aws_iam_role.github_actions.name
+  policy_arn = aws_iam_policy.cloudfront_invalidation.arn
 }
 
 # Output the role ARN for use in GitHub Actions workflows
